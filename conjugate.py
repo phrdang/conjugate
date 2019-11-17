@@ -31,24 +31,30 @@ in multiple tenses (and moods)
 import random
 from time import sleep
 
+MOODS = ['ind', 'sub', 'imp']
 SUBJECTS = ['yo', 'tú', 'él/ella/usted', 'nosotros/as', 'vosotros/as', 'ellos/ellas/ustedes']
-REFLEXIVE_PRONOUNS = ['me', 'te', 'se', 'nos', 'os', 'se']
+TENSES = ['pres', 'imp', 'pret', 'fut', 'cond', 'pres perf', 'past perf', 'fut perf', 'cond perf', 'none']
+
 VALID_ENDINGS = ['ar', 'er', 'ir']
 VALID_STEM_CHANGES = ['i', 'ie', 'ue']
 
+REFLEXIVE_PRONOUNS = ['me', 'te', 'se', 'nos', 'os', 'se']
+
 ######### REGULAR #########
 
-# indicative -ar endings
 IND_PRES_AR = ['o', 'as', 'a', 'amos', 'áis', 'an']
-IND_IMP_AR = ['aba', 'abas', 'aba', 'ábamos', 'abais', 'aban']
-IND_PRET_AR = ['é', 'aste', 'ó', 'amos', 'asteis', 'aron']
-
-# indicative -er and -ir endngs
 IND_PRES_ER = ['o', 'es', 'e', 'emos', 'éis', 'en']
 IND_PRES_IR = ['o', 'es', 'e', 'imos', 'ís', 'en']
 
+IND_IMP_AR = ['aba', 'abas', 'aba', 'ábamos', 'abais', 'aban']
 IND_IMP_ER_IR = ['ía', 'ías', 'ía', 'íamos', 'íais', 'ían']
+
+IND_PRET_AR = ['é', 'aste', 'ó', 'amos', 'asteis', 'aron']
 IND_PRET_ER_IR = ['í', 'iste', 'ió', 'imos', 'isteis', 'ieron']
+
+IND_FUT_AR_ER_IR = ['é', 'ás', 'á', 'emos', 'éis', 'án']
+
+IND_COND_AR_ER_IR = ['ía', 'ías', 'ía', 'íamos', 'íais', 'ían']
 
 ######### IRREGULAR #########
 
@@ -80,6 +86,18 @@ IND_IMP_IR = ['iba', 'ibas', 'iba', 'íbamos', 'ibais', 'iban']
 IND_IMP_VER = ['veía', 'veías', 'veía', 'veíamos', 'veíais', 'veían']
 
 # preterite
+
+######### PARTICIPLE & GERUND (PROGRESSIVE) ##########
+
+# regular
+PARTICIPLE_AR = 'ado'
+PARTICIPLE_ER_IR = 'ido'
+
+GERUND_AR = 'ando'
+GENRUND_ER_IR = 'iendo'
+
+# irregular
+# add
 
 class Verb:    
     def __init__(self, verb, definition, is_reflexive=False, is_stem_changing=False, stem_change=None, is_starred=False):
@@ -144,13 +162,40 @@ class Verb:
             mood {str} -- indicative ('ind'), subjunctive ('sub'), or imperative ('imp')
             tense {str} -- none ('none'), present ('pres'), imperfect ('imp'), preterite ('pret'),
                             future ('fut'), conditional ('cond'), present perfect ('pres perf'),
-                            past imperfect ('past perf'), conditional perfect ('cond perf')
+                            past imperfect ('past perf'), future perfect ('fut perf'), 
+                            conditional perfect ('cond perf')
             subject {int} -- 0-5 (yo-ellos)
+
+        Raises:
+            TypeError -- if args are not of correct type
+            ValueError -- if args are not valid
         
         Returns:
             str -- conjugated verb
         '''
+        # check if arg types are correct, raise exceptions otherwise
+        if type(mood) != str:
+            raise TypeError("arg: mood must be of type str")
 
+        if type(tense) != str:
+            raise TypeError("arg: tense must be of type str")
+
+        if type(subject) != int:
+            raise TypeError("arg: subject must be of type int")
+
+        # check if arg values are valid, raise exceptions otherwise
+        if mood not in MOODS:
+            raise ValueError("arg: mood must be in " + MOODS)
+
+        if tense not in TENSES:
+            raise ValueError("arg: tense must be in " + TENSES)
+
+        if subject not in [0, 1, 2, 3, 4, 5]:
+            raise ValueError("arg: subject must be an int from 0-5 (inclusive)")
+
+        # conjugate based on mood and tense
+
+        # indicative
         if mood == 'ind':
             if tense == 'pres':
                 result = self.ind_pres[subject]
@@ -166,8 +211,12 @@ class Verb:
                 result = self.ind_pres_perf[subject]
             elif tense == 'past perf':
                 result = self.ind_past_perf[subject]
+            elif tense == 'fut perf':
+                result = self.ind_fut_perf[subject]
             elif tense == 'cond perf':
                 result = self.ind_cond_perf[subject]
+        
+        # subjunctive
         elif mood == 'sub':
             if tense == 'pres':
                 pass
@@ -185,8 +234,11 @@ class Verb:
                 pass
             elif tense == 'pres_pret':
                 pass
+        
+        # imperative
         elif mood == 'imp':
             pass
+        
 
         return result
 
