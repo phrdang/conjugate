@@ -68,7 +68,7 @@ IND_PRET_YO_GUAR = 'güé'
 
 # indicative -caer, -eer, -oer, -oír, -uir preterite endings (i > y)
 IND_PRET_UIR = ['í', 'iste', 'yó', 'imos', 'isteis', 'yeron']
-IND_PRET_EER = ['í', 'íste', 'yó', 'ímos', 'isteis', 'yeron']
+IND_PRET_VOWEL_ER = ['í', 'íste', 'yó', 'ímos', 'isteis', 'yeron']
 
 # indicative -ucir, -traer preterite endings (j)
 IND_PRET_UCIR_TRAER = ['je', 'jiste', 'jo', 'jimos', 'jisteis', 'jeron']
@@ -94,44 +94,62 @@ PARTICIPLE_AR = 'ado'
 PARTICIPLE_ER_IR = 'ido'
 
 GERUND_AR = 'ando'
-GENRUND_ER_IR = 'iendo'
+GERUND_ER_IR = 'iendo'
 
 # irregular
-# add
+# add verbs
+IRREGULAR_VERBS = ['traer']
+IRREGULAR_LAST_THREES = ['car', 'gar', 'zar', 'gir', 'ger', 'eer', 'oer', 'oir', 'oír', 'uir']
+IRREGULAR_LAST_FOURS = ['guar', 'ucir', 'caer']
 
 class Verb:    
-    def __init__(self, verb, definition, is_reflexive=False, is_stem_changing=False, stem_change=None, is_starred=False):
+    def __init__(self, verb, definition, reflexive=False, stem_changing=False, stem_change=None, starred=False):
         # checking if args are valid is the job of main
         
         # assign instance variables based on args
         self.verb = verb
+        self.stem = verb[:-2]
         self.ending = verb[-2:]
+        self.last_three = verb[-3:]
+        self.last_four = verb[-4:]
         self.definition = definition
-        self.is_reflexive = is_reflexive
-        self.is_stem_changing = is_stem_changing
+        self.reflexive = reflexive
+        self.stem_changing = stem_changing
         self.stem_change = stem_change
-        self.is_starred = is_starred
+        self.starred = starred
 
-        # assign endings depending on verb (create lists)
-        # handle irregular verbs later
+        # note that stem-changing verbs are not considered irregular
+        self.regular = self.verb not in IRREGULAR_VERBS and self.last_three not in IRREGULAR_LAST_THREES \
+            and self.last_four not in IRREGULAR_LAST_FOURS
 
+        # assign regular endings depending on verb ending
         if self.ending == 'ar':
-            IND_PRES = IND_PRES_AR
-            IND_IMP = IND_IMP_AR
-            IND_PRET = IND_PRET_AR
+            IND_PRES = IND_PRES_AR.copy()
+            IND_IMP = IND_IMP_AR.copy()
+            IND_PRET = IND_PRET_AR.copy()
+
+            self.participle = PARTICIPLE_AR
+            self.gerund = GERUND_AR
 
             # add other tenses later
 
         elif self.ending == 'er':
-            IND_PRES = IND_PRES_ER
-            IND_IMP = IND_IMP_ER_IR
-            IND_PRET = IND_PRET_ER_IR
+            IND_PRES = IND_PRES_ER.copy()
+            IND_IMP = IND_IMP_ER_IR.copy()
+            IND_PRET = IND_PRET_ER_IR.copy()
+
+            self.participle = PARTICIPLE_ER_IR
+            self.gerund = GERUND_ER_IR
 
              # add other tenses later
+
         else:
-            IND_PRES = IND_PRES_IR
-            IND_IMP = IND_IMP_ER_IR
-            IND_PRET= IND_PRET_ER_IR
+            IND_PRES = IND_PRES_IR.copy()
+            IND_IMP = IND_IMP_ER_IR.copy()
+            IND_PRET= IND_PRET_ER_IR.copy()
+
+            self.participle = PARTICIPLE_ER_IR
+            self.gerund = GERUND_ER_IR
 
              # add other tenses later
         
@@ -149,10 +167,54 @@ class Verb:
         self.ind_fut_perf = []
         self.ind_cond_perf = []
 
+        # modify assigned endings if irregular
+        if not self.regular:
+            # -car, -gar, -zar verbs (irregular in yo form in preterite)
+            if self.last_three == 'car':
+                IND_PRES[0] = IND_PRET_YO_CAR
+            elif self.last_three == 'gar':
+                IND_PRET[0] = IND_PRET_YO_GAR
+            elif self.last_three == 'zar':
+                IND_PRET[0] = IND_PRET_YO_ZAR
+
+            # -guar verbs (add umlat in yo form preterite)
+            elif self.last_four == 'guar':
+                IND_PRET[0] = IND_PRET_YO_GUAR
+
+            # -ucir, -traer verbs (c > j, no accents in preterite)
+            elif self.last_four == 'ucir' or self.verb[-5:] == 'traer':
+                IND_PRET = IND_PRET_UCIR_TRAER
+
+            # vowel + er verbs (e > y in preterite) [not counting -traer]
+            elif self.last_four == 'caer' or self.last_three in ['eer', 'oir', 'oír', 'oer']:
+                IND_PRET = IND_PRET_VOWEL_ER
+
+            # -uir verbs (e > y, but no accent for tú in preterite)
+            elif self.last_three == 'uir':
+                IND_PRET = IND_PRET_UIR
+
+            # -ger, -gir verbs (g > j in yo form in preterite)
+            elif self.last_three == 'ger' or self.last_three == 'gir':
+                IND_PRES[0] = 'jo'
+
+
+        # conjugate verb in different subjects and 
+        # tenses based on assigned regular endings
         for i in range(6):
-            self.ind_pres.append(verb[:-2] + IND_PRES[i])
-            self.ind_imp.append(verb[:-2] + IND_IMP[i])
-            self.ind_pret.append(verb[:-2] + IND_PRET[i])
+            self.ind_pres.append(self.stem + IND_PRES[i])
+            self.ind_imp.append(self.stem + IND_IMP[i])
+
+            if self.last_three in ['car', 'gar', 'zar'] and i == 0:
+                self.ind_pret.append(self.verb[:-3] + IND_PRET[i])
+            else:
+                self.ind_pret.append(self.stem + IND_PRET[i])
+
+        # modify conjugations if irregular
+        # add code
+
+        
+
+        # add stem changes if stem-changing
         
     def conjugate(self, mood, tense, subject):
         '''
@@ -247,6 +309,7 @@ class Verb:
         # format nicely with verb tables?
 
     # write getters and setters
+    # for booleans, prefix with "is_"
 
 
 def get_command(valid_input):
@@ -273,8 +336,13 @@ print("Welcome to Spanish Conjugation!")
 hablar = Verb("hablar", "to speak")
 escribir = Verb("escribir", "to write")
 aprender = Verb("aprender", "to learn")
+cazar = Verb("cazar", "to hunt")
+leer = Verb("leer", "to read")
+oír = Verb("oír", "to hear")
+destruir = Verb("destruir", "to destroy")
+traer = Verb("traer", "to bring")
 
-verbs = [hablar, escribir, aprender]
+verbs = [hablar, escribir, aprender, cazar, leer, oír, destruir, traer]
 
 for verb in verbs:
     print()
@@ -294,6 +362,8 @@ for verb in verbs:
     for i in range(6):
         conjugated = verb.conjugate('ind', 'pret', i)
         print(SUBJECTS[i] + " " + conjugated)
+
+    print("-----------------------------------------------")
 
 # while not quit:
 #     print("Main Menu")
